@@ -6,15 +6,16 @@
 #include "translate.h"
 #include "instruction.h"
 
-FILE *iimage, *dimage, *error_dump, *snapshot;
+FILE *iimage, *dimage, *error_dump, *snapshot, *fptr_report;
 unsigned iimageLen, dimageLen;
 char *iimageBuffer, *dimageBuffer;
 
 void Open() {
     iimage = fopen("iimage.bin", "rb");
     dimage = fopen("dimage.bin", "rb");
-    error_dump = fopen("error_dump.rpt", "wb");
+    //error_dump = fopen("error_dump.rpt", "wb");
     snapshot = fopen("snapshot.rpt", "wb");
+    fptr_report = fopen("report.rpt", "wb");
 
     fseek(iimage, 0, SEEK_END);
     fseek(dimage, 0, SEEK_END);
@@ -71,7 +72,7 @@ void IImg() {
         Memory::IMemory[index++] = iimageBuffer[i];
     }
 }
-
+/*
 void errorDump() {
     if (Terminal::write2Zero) {
         fprintf(error_dump, "In cycle %d: Write $0 Error\n", Register::cycle);
@@ -90,7 +91,7 @@ void errorDump() {
         //printf("cycle %d: Misalignment Error\n", Register::cycle);
     }
 }
-
+*/
 void snapShot() {
     fprintf(snapshot, "cycle %d\n", Register::cycle);
     //printf("Register::cycle %d\n", Register::cycle);
@@ -103,6 +104,32 @@ void snapShot() {
     fprintf(snapshot, "PC: 0x%08X\n\n\n", Register::PC);
     //printf("PC: 0x%08X\n\n\n", Register::PC);
     Register::cycle++;
+}
+
+void report() {
+    fprintf( fptr_report, "ICache :\n");
+    fprintf( fptr_report, "# hits: %u\n", hits );
+    fprintf( fptr_report, "# misses: %u\n\n", misses );
+
+    fprintf( fptr_report, "DCache :\n");
+    fprintf( fptr_report, "# hits: %u\n", hits );
+    fprintf( fptr_report, "# misses: %u\n\n", misses );
+
+    fprintf( fptr_report, "ITLB :\n");
+    fprintf( fptr_report, "# hits: %u\n", hits );
+    fprintf( fptr_report, "# misses: %u\n\n", misses );
+
+    fprintf( fptr_report, "DTLB :\n");
+    fprintf( fptr_report, "# hits: %u\n", hits );
+    fprintf( fptr_report, "# misses: %u\n\n", misses );
+
+    fprintf( fptr_report, "IPageTable :\n");
+    fprintf( fptr_report, "# hits: %u\n", IPageTable.hitNum );
+    fprintf( fptr_report, "# misses: %u\n\n", IPageTable.missNum );
+
+    fprintf( fptr_report, "DPageTable :\n");
+    fprintf( fptr_report, "# hits: %u\n", DPageTable.hitNum );
+    fprintf( fptr_report, "# misses: %u\n\n", DPageTable.missNum );
 }
 
 int main() {
@@ -118,8 +145,10 @@ int main() {
     	Terminal::dataMisaaligned = false;
     	snapShot();
     	Assembly();
-    	errorDump();
+    	//errorDump();
     }
+
+    report();
  
     return 0;
 }
