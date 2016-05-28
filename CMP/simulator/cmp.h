@@ -1,34 +1,104 @@
 #ifndef CMP_H
 #define CMP_H
 
-#include "global.h"
+#include <stdio.h>
 
-void initTLB();
+FILE *fptr_report;
 
-void initPTE();
+int findITLB(int VPN);
 
-void initCACHE();
+int findIPTE(int VPN);
 
-void initMemory();
+void IPTEmiss(int VPN);
 
+void ITLBmiss(int VPN);
 
-void check_iPTE(int VPN);
+int findICACHE(int PPN);
 
-void check_iTLB(int VPN);
+void ICACHEmiss(int PPN);
 
-void check_iCACHE(int PPN);
+int findDPTE(int VPN);
 
-void check_iMEMOEY(int VA);
+void DPTEmiss(int VPN);
 
-void putTLB(VPN);
+void DTLBmiss(int VPN);
 
+int findDCACHE(int PPN);
 
-void check_dPTE(int VPN);
+void DCACHEmiss(int PPN);
 
-void check_dTLB(int VPN);
+void checkDMEMORY(int VA);
 
-void check_dCACHE(int PPN);
+typedef struct _TLB {
+    int VPN;
+    int PPN;
+    int last_cycle;
+    int valid;
+} TLB;
 
-void check_dMEMOEY(int VA);
+typedef struct _PTE {
+    int PPN;
+    int valid;
+} PTE;
+
+typedef struct _CACHE {
+    int tag;
+    int MRU;
+    int valid;
+} CACHE;
+
+typedef struct _MEMORY {
+    int last_cycle;
+    int valid;
+} MEMORY;
+
+TLB *iTLB,*dTLB;
+PTE *iPTE,*dPTE;
+CACHE **iCACHE,**dCACHE; //2 dim
+MEMORY *iMEMORY,*dMEMORY;
+
+int iPAGE_SIZE;
+int iDISK_SIZE;
+int iPTE_entries;
+int iTLB_entries;
+int iCACHE_SIZE;
+int iCACHE_associate;
+int iCACHE_entries;
+int iBLOCK_SIZE;
+int iMEMORY_SIZE;
+int iMEMORY_entries;
+int iPAGE_OFFSET;
+
+int dPAGE_SIZE;
+int dDISK_SIZE;
+int dPTE_entries;
+int dTLB_entries;
+int dCACHE_SIZE;
+int dCACHE_associate;
+int dCACHE_entries;
+int dBLOCK_SIZE;
+int dMEMORY_SIZE;
+int dMEMORY_entries;
+int dPAGE_OFFSET;
+
+int iTLB_hit;
+int iTLB_miss;
+int iPTE_hit;
+int iPTE_miss;
+int iCACHE_hit;
+int iCACHE_miss;
+
+int dTLB_hit;
+int dTLB_miss;
+int dPTE_hit;
+int dPTE_miss;
+int dCACHE_hit;
+int dCACHE_miss;
+
+int IVPN;
+int IPPN;
+
+int DVPN;
+int DPPN;
 
 #endif

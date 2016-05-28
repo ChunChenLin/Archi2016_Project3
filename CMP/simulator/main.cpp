@@ -6,7 +6,7 @@
 #include "translate.h"
 #include "instruction.h"
 
-FILE *iimage, *dimage, *error_dump, *snapshot, *fptr_report;
+FILE *iimage, *dimage, *error_dump, *snapshot;
 unsigned iimageLen, dimageLen;
 char *iimageBuffer, *dimageBuffer;
 
@@ -15,7 +15,6 @@ void Open() {
     dimage = fopen("dimage.bin", "rb");
     //error_dump = fopen("error_dump.rpt", "wb");
     snapshot = fopen("snapshot.rpt", "wb");
-    fptr_report = fopen("report.rpt", "wb");
 
     fseek(iimage, 0, SEEK_END);
     fseek(dimage, 0, SEEK_END);
@@ -106,36 +105,45 @@ void snapShot() {
     Register::cycle++;
 }
 
-void report() {
-    fprintf( fptr_report, "ICache :\n");
-    fprintf( fptr_report, "# hits: %u\n", hits );
-    fprintf( fptr_report, "# misses: %u\n\n", misses );
-
-    fprintf( fptr_report, "DCache :\n");
-    fprintf( fptr_report, "# hits: %u\n", hits );
-    fprintf( fptr_report, "# misses: %u\n\n", misses );
-
-    fprintf( fptr_report, "ITLB :\n");
-    fprintf( fptr_report, "# hits: %u\n", hits );
-    fprintf( fptr_report, "# misses: %u\n\n", misses );
-
-    fprintf( fptr_report, "DTLB :\n");
-    fprintf( fptr_report, "# hits: %u\n", hits );
-    fprintf( fptr_report, "# misses: %u\n\n", misses );
-
-    fprintf( fptr_report, "IPageTable :\n");
-    fprintf( fptr_report, "# hits: %u\n", IPageTable.hitNum );
-    fprintf( fptr_report, "# misses: %u\n\n", IPageTable.missNum );
-
-    fprintf( fptr_report, "DPageTable :\n");
-    fprintf( fptr_report, "# hits: %u\n", DPageTable.hitNum );
-    fprintf( fptr_report, "# misses: %u\n\n", DPageTable.missNum );
-}
-
-int main() {
+int main(int argc, char**argv) {
     Open();
     DImg();
     IImg();
+
+    //fixed
+    iDISK_SIZE=1024;
+    dDISK_SIZE=1024;
+    if(argc == 1) {
+        //default
+        iMEMORY_SIZE = 64;
+        dMEMORY_SIZE = 32;
+        iPAGE_SIZE = 8;
+        dPAGE_SIZE = 16;
+        iCACHE_SIZE = 16;
+        iBLOCK_SIZE = 4;
+        iCACHE_associate = 4;
+        dCACHE_SIZE = 16;
+        dBLOCK_SIZE = 4;
+        dCACHE_associate = 1;
+    } else if(argc == 11) {
+        //valid
+        iMEMORY_SIZE = atoi(argv[1]);
+        dMEMORY_SIZE = atoi(argv[2]);
+        iPAGE_SIZE = atoi(argv[3]);
+        dPAGE_SIZE = atoi(argv[4]);
+        iCACHE_SIZE = atoi(argv[5]);
+        iBLOCK_SIZE = atoi(argv[6]);
+        iCACHE_associate = atoi(argv[7]);
+        dCACHE_SIZE = atoi(argv[8]);
+        dBLOCK_SIZE = atoi(argv[9]);
+        dCACHE_associate = atoi(argv[10]);
+    } else {
+        printf("Invalid configuration!\n");
+        exit(0);
+    }
+
+    initICMP();
+    initDCMP();
 
     Terminal::halt = false;
     while(!Terminal::halt) {
@@ -144,11 +152,12 @@ int main() {
     	Terminal::memoryOverflow = false;
     	Terminal::dataMisaaligned = false;
     	snapShot();
+        checkIMEMORY(Register::PC);
     	Assembly();
     	//errorDump();
     }
 
     report();
- 
+
     return 0;
 }

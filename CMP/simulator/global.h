@@ -29,44 +29,26 @@ public:
 	static bool write2Zero, numberOverflow, memoryOverflow, dataMisaaligned;
 };
 
-typedef struct _TLB {
-    int VPN;
-    int PPN;
-    int last_cycle;
-    int valid;
-} TLB;
+void report();
 
-typedef struct _PTE {
-    int PPN;
-    int valid;
-} PTE;
+void initICMP();
 
-typedef struct _CACHE {
-    int tag;
-    int MRU;
-    int valid;
-} CACHE;
+void initDCMP();
 
-typedef struct _MEMORY {
-    int last_cycle;
-    int valid;
-} MEMORY;
+void checkIMEMORY(int VA);
 
-extern TLB *iTLB,*dTLB;
-extern PTE *iPTE,*dPTE;
-extern CACHE **iCACHE,**dCACHE; //2 dim
-extern MEMORY *iMEMORY,*dMEMORY;
-
-extern int iPAGE_SIZE;
 extern int iDISK_SIZE;
-extern int iPTE_entries;
-extern int iTLB_entries;
-extern int iCACHE_SIZE;
-extern int iCACHE_associate;
-extern int iCACHE_entries;
-extern int iBLOCK_SIZE;
 extern int iMEMORY_SIZE;
-extern int iMEMORY_entries;
-extern int iPAGE_OFFSET;
+extern int iPAGE_SIZE;
+extern int iCACHE_SIZE;
+extern int iBLOCK_SIZE;
+extern int iCACHE_associate;
+
+extern int dDISK_SIZE;
+extern int dMEMORY_SIZE;
+extern int dPAGE_SIZE;
+extern int dCACHE_SIZE;
+extern int dBLOCK_SIZE;
+extern int dCACHE_associate;
 
 #endif
