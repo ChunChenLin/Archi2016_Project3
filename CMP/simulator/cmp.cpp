@@ -31,20 +31,20 @@ void report() {
 }
 
 void initITLB() {
-    iTLB_entries = iPTE_entries/4;
+    iTLB_entries = iPTE_entries/4; // small version of PTE
     iTLB = (TLB*)malloc(iTLB_entries * sizeof(TLB));
     for(int i=0; i<iTLB_entries; i++) {
-        iTLB[i].last_cycle=0;
-        iTLB[i].PPN=0;
-        iTLB[i].VPN=0;
-        iTLB[i].valid=0;
+        iTLB[i].last_cycle = 0;
+        iTLB[i].PPN = 0;
+        iTLB[i].VPN = 0;
+        iTLB[i].valid = 0;
     }
-    iTLB_hit=0;
+    iTLB_hit = 0;
     iTLB_miss=0;
 }
 
 void initIPTE() {
-    iPTE_entries = iDISK_SIZE/iPAGE_SIZE;
+    iPTE_entries = iDISK_SIZE/iPAGE_SIZE; // big size record (Memory) VA --> PA
     iPTE = (PTE*)malloc(iPTE_entries * sizeof(PTE));
     for(int i=0; i<iPTE_entries; i++) {
         iPTE[i].PPN=0;
@@ -54,7 +54,7 @@ void initIPTE() {
     iPTE_miss=0;
 }
 
-void initICACHE() { // 2 dim
+void initICACHE() { // 2 dim because of associate 
     iCACHE_entries = iCACHE_SIZE/iCACHE_associate/4;
     iCACHE = (CACHE**)malloc(iCACHE_entries * sizeof(CACHE *));
     for(int i=0; i<iCACHE_entries; i++) {
@@ -62,9 +62,9 @@ void initICACHE() { // 2 dim
     }
     for(int i=0; i<iCACHE_entries; i++) {
         for(int j=0; j<iCACHE_associate; j++) {
-            iCACHE[i][j].MRU=0;
-            iCACHE[i][j].tag=0;
-            iCACHE[i][j].valid=0;
+            iCACHE[i][j].MRU = 0;
+            iCACHE[i][j].tag = 0;
+            iCACHE[i][j].valid = 0;
         }
     }
     iCACHE_hit=0;
@@ -76,18 +76,16 @@ void initIMEMORY()
     iMEMORY_entries = iMEMORY_SIZE/iPAGE_SIZE; 
     iMEMORY = (MEMORY*)malloc(iMEMORY_entries * sizeof(MEMORY));   
     for(int i=0; i<iMEMORY_entries; i++) {
-        iMEMORY[i].last_cycle=0;
-        iMEMORY[i].valid=0;
+        iMEMORY[i].last_cycle = 0;
+        iMEMORY[i].valid = 0;
     }   
 }
 
 int findITLB(int VPN)
 {
-    for(int i=0; i<iTLB_entries; i++)
-    {
-        if(iTLB[i].VPN==VPN && iTLB[i].valid==1)
-        {
-            iTLB[i].last_cycle=Register::cycle;
+    for(int i=0; i<iTLB_entries; i++) {
+        if(iTLB[i].VPN==VPN && iTLB[i].valid==1) {
+            iTLB[i].last_cycle = Register::cycle;
             return iTLB[i].PPN;
         }
 
@@ -97,137 +95,83 @@ int findITLB(int VPN)
 
 int findIPTE(int VPN)
 {
-    if(iPTE[VPN].valid==1)
-        return iPTE[VPN].PPN;
-    else
-        return -1;
+    if(iPTE[VPN].valid==1) return iPTE[VPN].PPN;
+    else return -1;
 }
 
 void IPTEmiss(int VPN)
 {
     /////////////////SWAP////////////////////
     int PPN=0;
-    int min=0x7FFFFFFF;
+    int min=999999;
     int flag=0;
     for(int i=0; i<iMEMORY_entries; i++)
     {
-        if(iMEMORY[i].valid==0)
-        {
-            PPN=i;
-            flag=1;
+        if(iMEMORY[i].valid==0) {
+            PPN = i;
+            flag = 1;
             break;
-        }
-        else
-        {
-            if(iMEMORY[i].last_cycle<min)
-            {
-                min=iMEMORY[i].last_cycle;
-                PPN=i;
+        } else {
+            if(iMEMORY[i].last_cycle < min) {
+                min = iMEMORY[i].last_cycle;
+                PPN = i;
             }
         }
     }
-    iMEMORY[PPN].last_cycle=Register::cycle;
-    iMEMORY[PPN].valid=1;
-    /////////////////UPDATE PT//////////////////
+    iMEMORY[PPN].last_cycle = Register::cycle;
+    iMEMORY[PPN].valid = 1;
 
-    if(flag==1)
-    {
-        iPTE[VPN].PPN=PPN;
-        iPTE[VPN].valid=1;
-    }
-    else
-    {
-        for(int i=0; i<iPTE_entries; i++)
-        {
-            if(iPTE[i].PPN==PPN)
-            {
-                iPTE[i].valid=0;
+    /////////////////UPDATE PTE//////////////////
+    if(flag==1) {
+        iPTE[VPN].PPN = PPN;
+        iPTE[VPN].valid = 1;
+    } else {
+        for(int i=0; i<iPTE_entries; i++) {
+            if(iPTE[i].PPN==PPN) {
+                iPTE[i].valid = 0;
             }
         }
-        iPTE[VPN].PPN=PPN;
-        iPTE[VPN].valid=1;
+        iPTE[VPN].PPN = PPN;
+        iPTE[VPN].valid = 1;
 
-        for(int i=0; i<iTLB_entries; i++)
-        {
-            if(iTLB[i].PPN==PPN)
-            {
+        for(int i=0; i<iTLB_entries; i++) {
+            if(iTLB[i].PPN==PPN) {
                 iTLB[i].valid=0;
             }
         }
-        for(int j=0; j<iPAGE_SIZE; j+=4)
-        {
+        for(int j=0; j<iPAGE_SIZE; j+=4) {
             int PA = PPN * iPAGE_SIZE + j;
             int PAB = PA / iBLOCK_SIZE;
             int index = PAB % iCACHE_entries;
             int tag = PA / iBLOCK_SIZE / iCACHE_entries;
-            if(iCACHE_associate==1)
-            {
-                if(iCACHE[index][0].tag==tag)
-                {
+            if(iCACHE_associate==1) {
+                if(iCACHE[index][0].tag==tag) {
                     iCACHE[index][0].valid=0;
                 }
-
-            }
-            else
-            {
-                for(int i=0; i<iCACHE_associate; i++)
-                {
-                    if(iCACHE[index][i].tag==tag)
-                    {
+            } else {
+                for(int i=0; i<iCACHE_associate; i++) {
+                    if(iCACHE[index][i].tag==tag) {
                         iCACHE[index][i].valid=0;
                         iCACHE[index][i].MRU=0;
                     }
                 }
             }
-
         }
     }
-
-
-    ////////////////UPDATE TLB//////////////////
-    min=0x7FFFFFFF;
-    int temp=0;
-    for(int i=0; i<iTLB_entries; i++)
-    {
-        if(iTLB[i].valid==0)
-        {
-            temp=i;
-            break;
-        }
-        else
-        {
-            if(iTLB[i].last_cycle<min)
-            {
-                min=iTLB[i].last_cycle;
-                temp=i;
-            }
-        }
-    }
-
-    iTLB[temp].last_cycle=Register::cycle;
-    iTLB[temp].valid=1;
-    iTLB[temp].PPN=PPN;
-    iTLB[temp].VPN=VPN;
-
 }
 
-void ITLBmiss(int VPN)
+void updateITLB(int VPN)
 {
-    int min=0x7FFFFFFF;
-    int temp=0;
+    int min = 999999;
+    int temp = 0;
     int PPN;
     PPN = iPTE[VPN].PPN;
-    for(int i=0; i<iTLB_entries; i++)
-    {
-        if(iTLB[i].valid==0)
-        {
+    for(int i=0; i<iTLB_entries; i++) {
+        if(iTLB[i].valid==0) {
             temp=i;
             break;
-        }
-        else
-        {
-            if(iTLB[i].last_cycle<min)
-            {
+        } else {
+            if(iTLB[i].last_cycle<min) {
                 min=iTLB[i].last_cycle;
                 temp=i;
             }
@@ -239,7 +183,7 @@ void ITLBmiss(int VPN)
     iTLB[temp].PPN=PPN;
     iTLB[temp].VPN=VPN;
 }
-int findICACHE(int PPN)
+bool findICACHE(int PPN)
 {
     int PA = PPN * iPAGE_SIZE + iPAGE_OFFSET;
     int PAB = PA / iBLOCK_SIZE;
@@ -248,67 +192,52 @@ int findICACHE(int PPN)
     int flag=0;
     int put=0;
 
-    if(iCACHE_associate==1)
-    {
-        if(tag==iCACHE[index][0].tag&&iCACHE[index][0].valid==1)
-        {
-
-            return 1;
+    if(iCACHE_associate==1) {
+        if(tag==iCACHE[index][0].tag&&iCACHE[index][0].valid==1) {
+            return true;
         }
     }
-    else
-    {
-        for(int i=0; i<iCACHE_associate; i++)
-        {
-            if(tag == iCACHE[index][i].tag && iCACHE[index][i].valid == 1)
-            {
-
-                for(int j=0; j<iCACHE_associate; j++)
-                {
-                    if(iCACHE[index][j].MRU==0)
-                    {
-
-                        if(flag==0)
-                        {
+    else {
+        for(int i=0; i<iCACHE_associate; i++) {
+            if(tag == iCACHE[index][i].tag && iCACHE[index][i].valid == 1) {
+                for(int j=0; j<iCACHE_associate; j++) {
+                    if(iCACHE[index][j].MRU==0) {
+                        if(flag==0) {
                             put =j;
                             flag=1;
-                        }
-                        else
-                        {
+                        } else {
                             flag=2;
                             break;
                         }
                     }
                 }
-                if(flag==1 && put == i)
-                {
-                    for(int j=0; j<iCACHE_associate; j++)
-                    {
+                if(flag==1 && put == i) {
+                    for(int j=0; j<iCACHE_associate; j++) {
                         iCACHE[index][j].MRU=0;
                     }
                 }
                 iCACHE[index][i].MRU=1;
-                return 1;
+                return true;
             }
         }
     }
-    return -1;
+    return false;
 }
 
-void ICACHEmiss(int PPN)
+void updateCACHE(int PPN)
 {
     int PA = PPN * iPAGE_SIZE + iPAGE_OFFSET;
     int PAB = PA / iBLOCK_SIZE;
-    int index =PAB % iCACHE_entries;
-    int tag = PA / iBLOCK_SIZE / iCACHE_entries;
-    int flag=0;
-    int put;
+    int index = PAB % iCACHE_entries;
+    int tag = (PA / iBLOCK_SIZE) / iCACHE_entries;
+    int flag = 0;
+    int put = 0;
 
-    if(iCACHE_associate==1)
+    if(iCACHE_associate==1) //direct-mapped
     {
         iCACHE[index][0].MRU=0;
-        iCACHE[index][0].tag=tag;
-        iCACHE[index][0].valid=1;
+        iCACHE[index][0].tag = tag;
+        iCACHE[index][0].valid = 1;
     }
     else
     {
@@ -340,52 +269,65 @@ void ICACHEmiss(int PPN)
         iCACHE[index][put].tag=tag;
         iCACHE[index][put].valid=1;
     }
-    iMEMORY[PPN].last_cycle=Register::cycle;
+    iMEMORY[PPN].last_cycle = Register::cycle;
 
 }
 
-void checkIMEMORY(int VA)
-{
+void checkIMEMORY(int VA) {
     IVPN = VA / iPAGE_SIZE;
     iPAGE_OFFSET = VA % iPAGE_SIZE;
-    IPPN = findITLB(IVPN);
+    IPPN = findITLB(IVPN); // VA -> PA
 
-    if(IPPN==-1)           ///TLB miss
-    {
-        iTLB_miss++;
-        IPPN=findIPTE(IVPN);
-
-        if(IPPN==-1)      ///PT miss
-        {
-            iPTE_miss++;
-            IPTEmiss(IVPN);
-        }
-        else            ///PT hit
-        {
-            iPTE_hit++;
-            ITLBmiss(IVPN);
-        }
-
-    }
-    else               ///TLB hit
-    {
+    if(IPPN!=-1) { //TLB hit
         iTLB_hit++;
-    }
-    int find=0;
-    IPPN = findITLB(IVPN);
-    find = findICACHE(IPPN);
-    if(find==-1)        ///CA miss
-    {
-        iCACHE_miss++;
-        ICACHEmiss(IPPN);
-    }
-    else                ///CA hit
-    {
-        iCACHE_hit++;
+        //go check CACHE
+        //IPPN = findITLB(IVPN);
+        if(findICACHE(IPPN)) { // CASE:1
+            //CAHCE hit
+            iCACHE_hit++;
+        } else {               // CASE:2
+            //CACHE miss
+            iCACHE_miss++;
+            // go search memory --> update cache
+            updateCACHE(IPPN);
+        }
+    } else { //TLB miss
+        iTLB_miss++;
+        //go check PTE
+        //IPPN = findIPTE(IVPN);
+        if(IPPN!=-1) { //PTE hit
+            iPTE_hit++;
+            //update TLB
+            updateITLB(IVPN);
+            //go check CACHE
+            IPPN = findITLB(IVPN);
+            if(findICACHE(IPPN)) {   //CASE:3
+                //CACHE hit
+                iCACHE_hit++;
+            } else {           //CASE:4
+                //CAHCE miss
+                iCACHE_miss++;
+                // go search memory --> update cache
+                updateCACHE(IPPN);
+            }
+
+        } else { //PTE miss   //CASE:5 the worst one
+            iPTE_miss++;
+            // SWAP --> update PTE --> update TLB
+            IPTEmiss(IVPN);
+            updateITLB(IVPN);
+
+            //CACHE must miss
+            IPPN = findITLB(IVPN);      
+            if(!findICACHE(IPPN)) {
+                iCACHE_miss++;
+                // go update CACHE
+                updateCACHE(IPPN);
+            }
+        }
     }
 
 }
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void initDTLB() {
     dTLB_entries = dPTE_entries/4;
@@ -463,7 +405,7 @@ void DPTEmiss(int VPN)
 {
     /////////////////SWAP////////////////////
     int PPN=0;
-    int min=0x7FFFFFFF;
+    int min=999999;
     int flag=0;
     for(int i=0; i<dMEMORY_entries; i++)
     {
@@ -544,7 +486,7 @@ void DPTEmiss(int VPN)
 
 
     ////////////////UPDATE TLB//////////////////
-    min=0x7FFFFFFF;
+    min=999999;
     int temp=0;
     for(int i=0; i<dTLB_entries; i++)
     {
@@ -572,7 +514,7 @@ void DPTEmiss(int VPN)
 
 void DTLBmiss(int VPN)
 {
-    int min=0x7FFFFFFF;
+    int min=999999;
     int temp=0;
     int PPN;
     PPN = dPTE[VPN].PPN;

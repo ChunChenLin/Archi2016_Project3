@@ -11,11 +11,11 @@ int findIPTE(int VPN);
 
 void IPTEmiss(int VPN);
 
-void ITLBmiss(int VPN);
+void updateITLB(int VPN);
 
-int findICACHE(int PPN);
+bool findICACHE(int PPN);
 
-void ICACHEmiss(int PPN);
+void updateCACHE(int PPN);
 
 int findDPTE(int VPN);
 
