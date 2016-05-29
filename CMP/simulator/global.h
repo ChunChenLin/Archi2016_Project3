@@ -37,8 +37,8 @@ void initIPTE();
 void initICACHE();
 void initIMEMORY();
 
-void checkIMEMORY(int VA);
-void checkDMEMORY(int VA);
+void I_CMP(int VA);
+void D_CMP(int VA);
 
 //void initDCMP();
 void initDTLB();

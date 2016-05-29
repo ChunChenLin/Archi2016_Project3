@@ -71,26 +71,7 @@ void IImg() {
         Memory::IMemory[index++] = iimageBuffer[i];
     }
 }
-/*
-void errorDump() {
-    if (Terminal::write2Zero) {
-        fprintf(error_dump, "In cycle %d: Write $0 Error\n", Register::cycle);
-        //printf("cycle %d: Write $0 Error\n", Register::cycle);
-    }
-    if (Terminal::numberOverflow) {
-        fprintf(error_dump, "In cycle %d: Number Overflow\n", Register::cycle);
-        //printf("cycle %d: Number Overflow\n", Register::cycle);
-    }
-    if (Terminal::memoryOverflow) {
-        fprintf(error_dump, "In cycle %d: Address Overflow\n", Register::cycle);
-        //printf("cycle %d: Address Overflow\n", Register::cycle);
-    }
-    if (Terminal::dataMisaaligned) {
-        fprintf(error_dump, "In cycle %d: Misalignment Error\n", Register::cycle);
-        //printf("cycle %d: Misalignment Error\n", Register::cycle);
-    }
-}
-*/
+
 void snapShot() {
     fprintf(snapshot, "cycle %d\n", Register::cycle);
     //printf("Register::cycle %d\n", Register::cycle);
@@ -159,7 +140,7 @@ int main(int argc, char**argv) {
     	Terminal::memoryOverflow = false;
     	Terminal::dataMisaaligned = false;
     	snapShot();
-        checkIMEMORY(Register::PC);
+        I_CMP(Register::PC);
     	Assembly();
     	//errorDump();
     }

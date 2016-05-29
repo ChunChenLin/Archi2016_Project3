@@ -9,23 +9,26 @@ int findITLB(int VPN);
 
 int findIPTE(int VPN);
 
-void IPTEmiss(int VPN);
+void swap_updateIPTE(int VPN);
 
 void updateITLB(int VPN);
 
 bool findICACHE(int PPN);
 
-void updateCACHE(int PPN);
+void updateICACHE(int PPN);
+
+///////////////////////////////////////
+int findDTLB(int VPN);
 
 int findDPTE(int VPN);
 
-void DPTEmiss(int VPN);
+void swap_updateDPTE(int VPN);
 
-void DTLBmiss(int VPN);
+void updateDTLB(int VPN);
 
-int findDCACHE(int PPN);
+bool findDCACHE(int PPN);
 
-void DCACHEmiss(int PPN);
+void updateDCACHE(int PPN);
 
 //void checkDMEMORY(int VA);
 

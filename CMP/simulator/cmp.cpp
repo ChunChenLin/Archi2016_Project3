@@ -99,7 +99,7 @@ int findIPTE(int VPN)
     else return -1;
 }
 
-void IPTEmiss(int VPN)
+void swap_updateIPTE(int VPN)
 {
     /////////////////SWAP////////////////////
     int PPN=0;
@@ -171,52 +171,55 @@ void updateITLB(int VPN)
             temp=i;
             break;
         } else {
-            if(iTLB[i].last_cycle<min) {
-                min=iTLB[i].last_cycle;
-                temp=i;
+            if(iTLB[i].last_cycle < min) {
+                min = iTLB[i].last_cycle;
+                temp = i;
             }
         }
     }
 
-    iTLB[temp].last_cycle=Register::cycle;
-    iTLB[temp].valid=1;
-    iTLB[temp].PPN=PPN;
-    iTLB[temp].VPN=VPN;
+    iTLB[temp].last_cycle = Register::cycle;
+    iTLB[temp].valid = 1;
+    iTLB[temp].PPN = PPN;
+    iTLB[temp].VPN = VPN;
 }
 bool findICACHE(int PPN)
 {
+    if(PPN == -1) printf("PPN=-1\n");
+
     int PA = PPN * iPAGE_SIZE + iPAGE_OFFSET;
     int PAB = PA / iBLOCK_SIZE;
     int index = PAB % iCACHE_entries;
-    int tag = PA / iBLOCK_SIZE / iCACHE_entries;
+    int tag = (PA / iBLOCK_SIZE) / iCACHE_entries;
     int flag=0;
-    int put=0;
+    int tmp=0;
 
-    if(iCACHE_associate==1) {
-        if(tag==iCACHE[index][0].tag&&iCACHE[index][0].valid==1) {
+    if(iCACHE_associate==1) { //direct-mapped
+        if(iCACHE[index][0].tag==tag && iCACHE[index][0].valid==1) {
             return true;
         }
     }
     else {
         for(int i=0; i<iCACHE_associate; i++) {
-            if(tag == iCACHE[index][i].tag && iCACHE[index][i].valid == 1) {
+            if(iCACHE[index][i].tag==tag && iCACHE[index][i].valid == 1) {
+                // LRU policy
                 for(int j=0; j<iCACHE_associate; j++) {
                     if(iCACHE[index][j].MRU==0) {
                         if(flag==0) {
-                            put =j;
-                            flag=1;
+                            tmp = j;
+                            flag = 1;
                         } else {
-                            flag=2;
+                            flag = 2;
                             break;
                         }
                     }
                 }
-                if(flag==1 && put == i) {
+                if(flag==1 && tmp==i) {
                     for(int j=0; j<iCACHE_associate; j++) {
-                        iCACHE[index][j].MRU=0;
+                        iCACHE[index][j].MRU = 0;
                     }
                 }
-                iCACHE[index][i].MRU=1;
+                iCACHE[index][i].MRU = 1;
                 return true;
             }
         }
@@ -224,56 +227,46 @@ bool findICACHE(int PPN)
     return false;
 }
 
-void updateCACHE(int PPN)
+void updateICACHE(int PPN)
 {
+    if(PPN == -1) printf("PPN=-1\n");
+
     int PA = PPN * iPAGE_SIZE + iPAGE_OFFSET;
     int PAB = PA / iBLOCK_SIZE;
     int index = PAB % iCACHE_entries;
     int tag = (PA / iBLOCK_SIZE) / iCACHE_entries;
     int flag = 0;
-    int put = 0;
+    int tmp = 0;
 
-    if(iCACHE_associate==1) //direct-mapped
-    {
+    if(iCACHE_associate==1) { //direct-mapped
         iCACHE[index][0].MRU=0;
         iCACHE[index][0].tag = tag;
         iCACHE[index][0].valid = 1;
-    }
-    else
-    {
-        for(int i=0; i<iCACHE_associate; i++)
-        {
-            if(iCACHE[index][i].MRU==0)
-            {
-
-                if(flag==0)
-                {
-                    put = i;
+    } else {
+        for(int i=0; i<iCACHE_associate; i++) {
+            if(iCACHE[index][i].MRU==0) {
+                if(flag==0) {
+                    tmp = i;
                     flag=1;
-                }
-                else
-                {
+                } else {
                     flag=2;
                     break;
                 }
             }
         }
-        if(flag==1)
-        {
-            for(int i=0; i<iCACHE_associate; i++)
-            {
+        if(flag==1) {
+            for(int i=0; i<iCACHE_associate; i++) {
                 iCACHE[index][i].MRU=0;
             }
         }
-        iCACHE[index][put].MRU=1;
-        iCACHE[index][put].tag=tag;
-        iCACHE[index][put].valid=1;
+        iCACHE[index][tmp].MRU = 1;
+        iCACHE[index][tmp].tag = tag;
+        iCACHE[index][tmp].valid = 1;
     }
     iMEMORY[PPN].last_cycle = Register::cycle;
-
 }
 
-void checkIMEMORY(int VA) {
+void I_CMP(int VA) {
     IVPN = VA / iPAGE_SIZE;
     iPAGE_OFFSET = VA % iPAGE_SIZE;
     IPPN = findITLB(IVPN); // VA -> PA
@@ -289,12 +282,12 @@ void checkIMEMORY(int VA) {
             //CACHE miss
             iCACHE_miss++;
             // go search memory --> update cache
-            updateCACHE(IPPN);
+            updateICACHE(IPPN);
         }
     } else { //TLB miss
         iTLB_miss++;
         //go check PTE
-        //IPPN = findIPTE(IVPN);
+        IPPN = findIPTE(IVPN);
         if(IPPN!=-1) { //PTE hit
             iPTE_hit++;
             //update TLB
@@ -308,13 +301,13 @@ void checkIMEMORY(int VA) {
                 //CAHCE miss
                 iCACHE_miss++;
                 // go search memory --> update cache
-                updateCACHE(IPPN);
+                updateICACHE(IPPN);
             }
 
         } else { //PTE miss   //CASE:5 the worst one
             iPTE_miss++;
             // SWAP --> update PTE --> update TLB
-            IPTEmiss(IVPN);
+            swap_updateIPTE(IVPN);
             updateITLB(IVPN);
 
             //CACHE must miss
@@ -322,11 +315,10 @@ void checkIMEMORY(int VA) {
             if(!findICACHE(IPPN)) {
                 iCACHE_miss++;
                 // go update CACHE
-                updateCACHE(IPPN);
+                updateICACHE(IPPN);
             }
         }
     }
-
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void initDTLB() {
@@ -401,7 +393,7 @@ int findDPTE(int VPN)
         return -1;
 }
 
-void DPTEmiss(int VPN)
+void swap_updateDPTE(int VPN)
 {
     /////////////////SWAP////////////////////
     int PPN=0;
@@ -480,39 +472,10 @@ void DPTEmiss(int VPN)
                 }
             }
         }
-
-
     }
-
-
-    ////////////////UPDATE TLB//////////////////
-    min=999999;
-    int temp=0;
-    for(int i=0; i<dTLB_entries; i++)
-    {
-        if(dTLB[i].valid==0)
-        {
-            temp=i;
-            break;
-        }
-        else
-        {
-            if(dTLB[i].last_cycle<min)
-            {
-                min=dTLB[i].last_cycle;
-                temp=i;
-            }
-        }
-    }
-
-    dTLB[temp].last_cycle=Register::cycle;
-    dTLB[temp].valid=1;
-    dTLB[temp].PPN=PPN;
-    dTLB[temp].VPN=VPN;
-
 }
 
-void DTLBmiss(int VPN)
+void updateDTLB(int VPN)
 {
     int min=999999;
     int temp=0;
@@ -540,19 +503,19 @@ void DTLBmiss(int VPN)
     dTLB[temp].PPN=PPN;
     dTLB[temp].VPN=VPN;
 }
-int findDCACHE(int PPN)
+bool findDCACHE(int PPN)
 {
     int PA = PPN * dPAGE_SIZE + dPAGE_OFFSET;
     int PAB = PA / dBLOCK_SIZE;
     int index = PAB % dCACHE_entries;
     int tag = PA / dBLOCK_SIZE / dCACHE_entries;
     int flag=0;
-    int put;
+    int tmp;
     if(dCACHE_associate==1)
     {
         if(tag==dCACHE[index][0].tag&&dCACHE[index][0].valid==1)
         {
-            return 1;
+            return true;
         }
 
     }
@@ -570,7 +533,7 @@ int findDCACHE(int PPN)
 
                         if(flag==0)
                         {
-                            put = j;
+                            tmp = j;
                             flag=1;
                         }
                         else
@@ -580,7 +543,7 @@ int findDCACHE(int PPN)
                         }
                     }
                 }
-                if(flag==1 && put == i)
+                if(flag==1 && tmp == i)
                 {
                     for(int j=0; j<dCACHE_associate; j++)
                     {
@@ -588,21 +551,21 @@ int findDCACHE(int PPN)
                     }
                 }
                 dCACHE[index][i].MRU=1;
-                return 1;
+                return true;
             }
         }
     }
-    return -1;
+    return false;
 }
 
-void DCACHEmiss(int PPN)
+void updateDCACHE(int PPN)
 {
     int PA = PPN * dPAGE_SIZE + dPAGE_OFFSET;
     int PAB = PA / dBLOCK_SIZE;
     int index =PAB % dCACHE_entries;
     int tag = PA / dBLOCK_SIZE / dCACHE_entries;
     int flag=0;
-    int put;
+    int tmp;
     if(dCACHE_associate==1)
     {
         dCACHE[index][0].MRU=0;
@@ -618,7 +581,7 @@ void DCACHEmiss(int PPN)
 
                 if(flag==0)
                 {
-                    put = i;
+                    tmp = i;
                     flag=1;
                 }
                 else
@@ -635,55 +598,67 @@ void DCACHEmiss(int PPN)
                 dCACHE[index][i].MRU=0;
             }
         }
-        dCACHE[index][put].MRU=1;
-        dCACHE[index][put].tag=tag;
-        dCACHE[index][put].valid=1;
+        dCACHE[index][tmp].MRU=1;
+        dCACHE[index][tmp].tag=tag;
+        dCACHE[index][tmp].valid=1;
     }
 
     dMEMORY[PPN].last_cycle=Register::cycle;
 
 }
 
-void checkDMEMORY(int VA)
+void D_CMP(int VA)
 {
     DVPN = VA / dPAGE_SIZE;
-
     dPAGE_OFFSET = VA % dPAGE_SIZE;
-    DPPN = findDTLB(DVPN);
+    DPPN = findDTLB(DVPN); // VA -> PA
 
-
-    if(DPPN==-1)           ///TLB miss
-    {
-        dTLB_miss++;
-        DPPN=findDPTE(DVPN);
-
-        if(DPPN==-1)      ///PT miss
-        {
-            dPTE_miss++;
-            DPTEmiss(DVPN);
-        }
-        else            ///PT hit
-        {
-            dPTE_hit++;
-            DTLBmiss(DVPN);
-        }
-
-    }
-    else               ///TLB hit
-    {
+    if(DPPN!=-1) { //TLB hit
         dTLB_hit++;
-    }
-    int find=0;
-    DPPN = findDTLB(DVPN);
-    find = findDCACHE(DPPN);
+        //go check CACHE
+        //IPPN = findITLB(IVPN);
+        if(findDCACHE(DPPN)) { // CASE:1
+            //CAHCE hit
+            dCACHE_hit++;
+        } else {               // CASE:2
+            //CACHE miss
+            dCACHE_miss++;
+            // go search memory --> update cache
+            updateDCACHE(DPPN);
+        }
+    } else { //TLB miss
+        dTLB_miss++;
+        //go check PTE
+        DPPN = findDPTE(DVPN);
+        if(DPPN!=-1) { //PTE hit
+            dPTE_hit++;
+            //update TLB
+            updateDTLB(DVPN);
+            //go check CACHE
+            DPPN = findITLB(DVPN);
+            if(findDCACHE(DPPN)) {   //CASE:3
+                //CACHE hit
+                dCACHE_hit++;
+            } else {           //CASE:4
+                //CAHCE miss
+                dCACHE_miss++;
+                // go search memory --> update cache
+                updateDCACHE(DPPN);
+            }
 
-    if(find==-1)        ///CA miss
-    {
-        dCACHE_miss++;
-        DCACHEmiss(DPPN);
-    }
-    else                ///CA hit
-    {
-        dCACHE_hit++;
+        } else { //PTE miss   //CASE:5 the worst one
+            dPTE_miss++;
+            // SWAP --> update PTE --> update TLB
+            swap_updateDPTE(DVPN);
+            updateDTLB(DVPN);
+
+            //CACHE must miss
+            DPPN = findDTLB(DVPN);      
+            if(!findDCACHE(DPPN)) {
+                dCACHE_miss++;
+                // go update CACHE
+                updateDCACHE(DPPN);
+            }
+        }
     }
 }
