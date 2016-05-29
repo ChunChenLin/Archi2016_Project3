@@ -1,5 +1,5 @@
-#include "instruction.h"
 #include "global.h"
+#include "instruction.h"
 #include <bitset>
 
 /* look up Appendix A */
@@ -158,6 +158,7 @@ void I_format(string op) {
 	else if(op == "lw") {
 		SignedImmediate();
 		Memory::position = Register::reg[Instruction::rs] + Instruction::immediate;
+		checkDMEMORY(Memory::position);
 		/*if(detectMemoryOverflow(3)) return;
 		if(detectDataMisaaligned(3)) return;*/
 		isMemoryOverflow = detectMemoryOverflow(3);
@@ -186,6 +187,7 @@ void I_format(string op) {
 	else if(op == "lh") {
 		SignedImmediate();
 		Memory::position = Register::reg[Instruction::rs] + Instruction::immediate; // need detection
+		checkDMEMORY(Memory::position);
 		//if(detectMemoryOverflow(1)) return;
 		//if(detectDataMisaaligned(1)) return;
 		isMemoryOverflow = detectMemoryOverflow(1);
@@ -211,6 +213,7 @@ void I_format(string op) {
 	else if(op == "lhu") {
 		SignedImmediate();
 		Memory::position = Register::reg[Instruction::rs] + Instruction::immediate; // need detection
+		checkDMEMORY(Memory::position);
 		//if(detectMemoryOverflow(1)) return;
 		//if(detectDataMisaaligned(1)) return;
 		isMemoryOverflow = detectMemoryOverflow(1);
@@ -229,6 +232,7 @@ void I_format(string op) {
 	else if(op == "lb") {
 		SignedImmediate();
 		Memory::position = Register::reg[Instruction::rs] + Instruction::immediate; // need detection
+		checkDMEMORY(Memory::position);
 		//if(detectMemoryOverflow(0)) return;
 		//if(detectDataMisaaligned(0)) return;
 		isMemoryOverflow = detectMemoryOverflow(0);
@@ -248,6 +252,7 @@ void I_format(string op) {
 	else if(op == "lbu") {
 		SignedImmediate();
 		Memory::position = Register::reg[Instruction::rs] + Instruction::immediate; // need detection
+		checkDMEMORY(Memory::position);
 		//if(detectMemoryOverflow(0)) return;
 		//if(detectDataMisaaligned(0)) return;
 		isMemoryOverflow = detectMemoryOverflow(0);
@@ -264,6 +269,7 @@ void I_format(string op) {
 	else if(op == "sw") {
 		SignedImmediate();
 		Memory::position = Register::reg[Instruction::rs] + Instruction::immediate; // need detection
+		checkDMEMORY(Memory::position);
 		//if(detectMemoryOverflow(3)) return;
 		//if(detectDataMisaaligned(3)) return;
 		isMemoryOverflow = detectMemoryOverflow(3);
@@ -286,6 +292,7 @@ void I_format(string op) {
 	else if(op == "sh") {
 		SignedImmediate();
 		Memory::position = Register::reg[Instruction::rs] + Instruction::immediate; // need detection
+		checkDMEMORY(Memory::position);
 		//if(detectMemoryOverflow(1)) return;
 		//if(detectDataMisaaligned(1)) return;
 		isMemoryOverflow = detectMemoryOverflow(1);
@@ -302,6 +309,7 @@ void I_format(string op) {
 	else if(op == "sb") {
 		SignedImmediate();
 		Memory::position = Register::reg[Instruction::rs] + Instruction::immediate; // need detection
+		checkDMEMORY(Memory::position);
 		//if(detectMemoryOverflow(0)) return;
 		//if(detectDataMisaaligned(0)) return;
 		isMemoryOverflow = detectMemoryOverflow(0);

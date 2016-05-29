@@ -30,69 +30,60 @@ void report() {
     fclose(fptr_report);
 }
 
-void initICMP()
-{
-    /*iMEMORY_SIZE=64;
-    iPAGE_SIZE=8;
-    iCACHE_SIZE=16;
-    iBLOCK_SIZE=4;
-    iCACHE_associate=4;
-
-    iDISK_SIZE=1024;
-    */
-
-    iPTE_entries = iDISK_SIZE/iPAGE_SIZE;
+void initITLB() {
     iTLB_entries = iPTE_entries/4;
-    iCACHE_entries = iCACHE_SIZE/iCACHE_associate/4;
-    iMEMORY_entries = iMEMORY_SIZE/iPAGE_SIZE;
     iTLB = (TLB*)malloc(iTLB_entries * sizeof(TLB));
-    iPTE = (PTE*)malloc(iPTE_entries * sizeof(PTE));
-    iMEMORY = (MEMORY*)malloc(iMEMORY_entries * sizeof(MEMORY));
-    iCACHE = (CACHE**)malloc(iCACHE_entries * sizeof(CACHE *));
-    for(int i=0; i<iCACHE_entries; i++)
-    {
-        iCACHE[i] = (CACHE*)malloc(iCACHE_associate * sizeof(CACHE));
-    }
-    for(int i=0; i<iPTE_entries; i++)
-    {
-        iPTE[i].PPN=0;
-        iPTE[i].valid=0;
-    }
-    for(int i=0; i<iTLB_entries; i++)
-    {
+    for(int i=0; i<iTLB_entries; i++) {
         iTLB[i].last_cycle=0;
         iTLB[i].PPN=0;
         iTLB[i].VPN=0;
         iTLB[i].valid=0;
     }
-    for(int i=0; i<iMEMORY_entries; i++)
-    {
-        iMEMORY[i].last_cycle=0;
-        iMEMORY[i].valid=0;
+    iTLB_hit=0;
+    iTLB_miss=0;
+}
+
+void initIPTE() {
+    iPTE_entries = iDISK_SIZE/iPAGE_SIZE;
+    iPTE = (PTE*)malloc(iPTE_entries * sizeof(PTE));
+    for(int i=0; i<iPTE_entries; i++) {
+        iPTE[i].PPN=0;
+        iPTE[i].valid=0;
     }
-    for(int i=0; i<iCACHE_entries; i++)
-    {
-        for(int j=0; j<iCACHE_associate; j++)
-        {
+    iPTE_hit=0;
+    iPTE_miss=0;
+}
+
+void initICACHE() { // 2 dim
+    iCACHE_entries = iCACHE_SIZE/iCACHE_associate/4;
+    iCACHE = (CACHE**)malloc(iCACHE_entries * sizeof(CACHE *));
+    for(int i=0; i<iCACHE_entries; i++) {
+        iCACHE[i] = (CACHE*)malloc(iCACHE_associate * sizeof(CACHE));
+    }
+    for(int i=0; i<iCACHE_entries; i++) {
+        for(int j=0; j<iCACHE_associate; j++) {
             iCACHE[i][j].MRU=0;
             iCACHE[i][j].tag=0;
             iCACHE[i][j].valid=0;
         }
     }
-
-    iTLB_hit=0;
-    iTLB_miss=0;
-    iPTE_hit=0;
-    iPTE_miss=0;
     iCACHE_hit=0;
     iCACHE_miss=0;
 }
 
+void initIMEMORY()
+{
+    iMEMORY_entries = iMEMORY_SIZE/iPAGE_SIZE; 
+    iMEMORY = (MEMORY*)malloc(iMEMORY_entries * sizeof(MEMORY));   
+    for(int i=0; i<iMEMORY_entries; i++) {
+        iMEMORY[i].last_cycle=0;
+        iMEMORY[i].valid=0;
+    }   
+}
 
 int findITLB(int VPN)
 {
-    int i;
-    for(i=0; i<iTLB_entries; i++)
+    for(int i=0; i<iTLB_entries; i++)
     {
         if(iTLB[i].VPN==VPN && iTLB[i].valid==1)
         {
@@ -395,63 +386,55 @@ void checkIMEMORY(int VA)
 
 }
 
-////////////////////////////////DATA//////////////////////
-
-void initDCMP()
-{
-    /*dPAGE_SIZE=16;
-    dDISK_SIZE=1024;
-    dCACHE_SIZE=16;
-    dCACHE_associate=1;
-    dBLOCK_SIZE=4;
-    dMEMORY_SIZE=32;
-    */
-
-    dPTE_entries = dDISK_SIZE/dPAGE_SIZE;
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void initDTLB() {
     dTLB_entries = dPTE_entries/4;
-    dCACHE_entries = dCACHE_SIZE/dCACHE_associate/4;
-    dMEMORY_entries = dMEMORY_SIZE/dPAGE_SIZE;
     dTLB = (TLB*)malloc(dTLB_entries * sizeof(TLB));
-    dPTE = (PTE*)malloc(dPTE_entries * sizeof(PTE));
-    dMEMORY = (MEMORY*)malloc(dMEMORY_entries * sizeof(MEMORY));
-    dCACHE = (CACHE**)malloc(dCACHE_entries * sizeof(CACHE *));
-    for(int i=0; i<dCACHE_entries; i++)
-    {
-        dCACHE[i] = (CACHE*)malloc(dCACHE_associate * sizeof(CACHE));
-    }
-    for(int i=0; i<dPTE_entries; i++)
-    {
-        dPTE[i].PPN=0;
-        dPTE[i].valid=0;
-    }
-    for(int i=0; i<dTLB_entries; i++)
-    {
+    for(int i=0; i<dTLB_entries; i++) {
         dTLB[i].last_cycle=0;
         dTLB[i].PPN=0;
         dTLB[i].VPN=0;
         dTLB[i].valid=0;
     }
-    for(int i=0; i<dMEMORY_entries; i++)
-    {
-        dMEMORY[i].last_cycle=0;
-        dMEMORY[i].valid=0;
+    dTLB_hit=0;
+    dTLB_miss=0;
+}
+
+void initDPTE() {
+    dPTE_entries = dDISK_SIZE/dPAGE_SIZE;
+    dPTE = (PTE*)malloc(dPTE_entries * sizeof(PTE));
+    for(int i=0; i<dPTE_entries; i++) {
+        dPTE[i].PPN=0;
+        dPTE[i].valid=0;
     }
-    for(int i=0; i<dCACHE_entries; i++)
-    {
-        for(int j=0; j<dCACHE_associate; j++)
-        {
+    dPTE_hit=0;
+    dPTE_miss=0;
+}
+
+void initDCACHE() {
+    dCACHE_entries = dCACHE_SIZE/dCACHE_associate/4;
+    dCACHE = (CACHE**)malloc(dCACHE_entries * sizeof(CACHE *));
+    for(int i=0; i<dCACHE_entries; i++) {
+        dCACHE[i] = (CACHE*)malloc(dCACHE_associate * sizeof(CACHE));
+    }
+    for(int i=0; i<dCACHE_entries; i++) {
+        for(int j=0; j<dCACHE_associate; j++) {
             dCACHE[i][j].MRU=0;
             dCACHE[i][j].tag=0;
             dCACHE[i][j].valid=0;
         }
     }
-
-    dTLB_hit=0;
-    dTLB_miss=0;
-    dPTE_hit=0;
-    dPTE_miss=0;
     dCACHE_hit=0;
     dCACHE_miss=0;
+}
+void initDMEMORY()
+{ 
+    dMEMORY_entries = dMEMORY_SIZE/dPAGE_SIZE;
+    dMEMORY = (MEMORY*)malloc(dMEMORY_entries * sizeof(MEMORY)); 
+    for(int i=0; i<dMEMORY_entries; i++) {
+        dMEMORY[i].last_cycle=0;
+        dMEMORY[i].valid=0;
+    }
 }
 
 int findDTLB(int VPN)

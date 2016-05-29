@@ -27,7 +27,9 @@ int findDCACHE(int PPN);
 
 void DCACHEmiss(int PPN);
 
-void checkDMEMORY(int VA);
+//void checkDMEMORY(int VA);
+
+//void checkIMEMORY(int VA);
 
 typedef struct _TLB {
     int VPN;

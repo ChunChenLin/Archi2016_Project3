@@ -31,11 +31,20 @@ public:
 
 void report();
 
-void initICMP();
-
-void initDCMP();
+//void initICMP();
+void initITLB();
+void initIPTE();
+void initICACHE();
+void initIMEMORY();
 
 void checkIMEMORY(int VA);
+void checkDMEMORY(int VA);
+
+//void initDCMP();
+void initDTLB();
+void initDPTE();
+void initDCACHE();
+void initDMEMORY();
 
 extern int iDISK_SIZE;
 extern int iMEMORY_SIZE;

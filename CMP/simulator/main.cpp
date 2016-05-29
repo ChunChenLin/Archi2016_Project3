@@ -142,8 +142,15 @@ int main(int argc, char**argv) {
         exit(0);
     }
 
-    initICMP();
-    initDCMP();
+    initIPTE();
+    initITLB();
+    initICACHE();
+    initIMEMORY();
+
+    initDPTE();
+    initDTLB();
+    initDCACHE();
+    initDMEMORY();
 
     Terminal::halt = false;
     while(!Terminal::halt) {

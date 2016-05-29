@@ -1,8 +1,8 @@
-CC = g++ -std=c++11
+CC = g++ -O2 -w -std=c++11
 SRCS = ./*.cpp
 OBS = ./*.o
 
-single_cycle: SRC
+CMP: SRC
 	$(CC) -o $@ $(OBS)
 
 SRC: $(SRCS)
