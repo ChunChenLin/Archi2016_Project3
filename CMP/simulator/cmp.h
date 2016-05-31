@@ -37,6 +37,7 @@ void updateDCACHE(int PPN);
 typedef struct _TLB {
     int VPN;
     int PPN;
+    int tag;
     int last_cycle;
     int valid;
 } TLB;
