@@ -132,7 +132,7 @@ void initDMEMORY()
     }
 }
 
-inline unsigned CACHE_MRU_all_ONE(unsigned idx) {
+inline unsigned iCACHE_MRU_all_ONE(unsigned idx) {
     unsigned allONE = 1;
     for(int i=0; i<iCACHE_associate; i++) {
         allONE &= iCACHE[idx][i].MRU;
@@ -140,10 +140,25 @@ inline unsigned CACHE_MRU_all_ONE(unsigned idx) {
     return allONE;
 }
 
-inline void clear_CACHE_MRU(unsigned idx, int i) {
+inline unsigned dCACHE_MRU_all_ONE(unsigned idx) {
+    unsigned allONE = 1;
+    for(int i=0; i<dCACHE_associate; i++) {
+        allONE &= dCACHE[idx][i].MRU;
+    }
+    return allONE;
+}
+
+inline void clear_iCACHE_MRU(unsigned idx, int i) {
     //if(iCACHE_associate==1) iCACHE[idx][i].MRU = 0;
     for(int j=0; j<iCACHE_associate; j++) {
         if(j != i) iCACHE[idx][j].MRU = 0;
+    }
+}
+
+inline void clear_dCACHE_MRU(unsigned idx, int i) {
+    //if(iCACHE_associate==1) iCACHE[idx][i].MRU = 0;
+    for(int j=0; j<dCACHE_associate; j++) {
+        if(j != i) dCACHE[idx][j].MRU = 0;
     }
 }
 
@@ -250,18 +265,13 @@ void swap_updateDPTE(int VPN)
     int PPN=0;
     int min=999999;
     int flag=0;
-    for(int i=0; i<dMEMORY_entries; i++)
-    {
-        if(dMEMORY[i].valid==0)
-        {
+    for(int i=0; i<dMEMORY_entries; i++) {
+        if(dMEMORY[i].valid==0) {
             PPN=i;
             flag=1;
             break;
-        }
-        else
-        {
-            if(dMEMORY[i].last_cycle<min)
-            {
+        } else {
+            if(dMEMORY[i].last_cycle<min) {
                 min=dMEMORY[i].last_cycle;
                 PPN=i;
             }
@@ -275,43 +285,31 @@ void swap_updateDPTE(int VPN)
         dPTE[VPN].PPN=PPN;
         dPTE[VPN].valid=1;
     } else {
-        for(int i=0; i<dPTE_entries; i++)
-        {
-            if(dPTE[i].PPN==PPN)
-            {
+        for(int i=0; i<dPTE_entries; i++) {
+            if(dPTE[i].PPN==PPN) {
                 dPTE[i].valid=0;
             }
         }
         dPTE[VPN].PPN=PPN;
         dPTE[VPN].valid=1;
-        for(int i=0; i<dTLB_entries; i++)
-        {
-            if(dTLB[i].PPN==PPN)
-            {
+        for(int i=0; i<dTLB_entries; i++) {
+            if(dTLB[i].PPN==PPN) {
                 dTLB[i].valid=0;
             }
         }
 
-        for(int j=0; j<dPAGE_SIZE; j++)
-        {
+        for(int j=0; j<dPAGE_SIZE; j++) {
             int PA = PPN * dPAGE_SIZE + j;
             int PAB = PA / dBLOCK_SIZE;
             int index = PAB % dCACHE_entries;
             int tag = PAB / dCACHE_entries;
-            if(dCACHE_associate==1)
-            {
-                if(dCACHE[index][0].tag==tag)
-                {
+            if(dCACHE_associate==1) {
+                if(dCACHE[index][0].tag==tag) {
                     dCACHE[index][0].valid=0;
                 }
-
-            }
-            else
-            {
-                for(int i=0; i<dCACHE_associate; i++)
-                {
-                    if(dCACHE[index][i].tag==tag && dCACHE[index][i].valid==1)
-                    {
+            } else {
+                for(int i=0; i<dCACHE_associate; i++) {
+                    if(dCACHE[index][i].tag==tag && dCACHE[index][i].valid==1) {
                         dCACHE[index][i].valid=0;
                         dCACHE[index][i].MRU=0;
                     }
@@ -327,7 +325,6 @@ void updateITLB(int VPN)
     int tmp = 0;
     int PPN;
 
-    PPN = iPTE[VPN].PPN;
     for(int i=0; i<iTLB_entries; i++) {
         if(iTLB[i].valid==0) {
             tmp = i;
@@ -339,7 +336,7 @@ void updateITLB(int VPN)
             }
         }
     }
-
+    PPN = iPTE[VPN].PPN;
     iTLB[tmp].last_cycle = Register::cycle;
     iTLB[tmp].valid = 1;
     iTLB[tmp].PPN = PPN;
@@ -352,7 +349,6 @@ void updateDTLB(int VPN)
     int tmp=0;
     int PPN;
 
-    PPN = dPTE[VPN].PPN;
     for(int i=0; i<dTLB_entries; i++) {
         if(dTLB[i].valid==0) {
             tmp = i;
@@ -364,7 +360,7 @@ void updateDTLB(int VPN)
             }
         }
     }
-
+    PPN = dPTE[VPN].PPN;
     dTLB[tmp].last_cycle = Register::cycle;
     dTLB[tmp].valid = 1;
     dTLB[tmp].PPN = PPN;
@@ -373,8 +369,7 @@ void updateDTLB(int VPN)
 
 bool findICACHE(int PPN)
 {
-    if(PPN == -1) printf("PPN=-1\n");
-
+    //if(PPN == -1) printf("PPN=-1\n");
     int PA = PPN * iPAGE_SIZE + iPAGE_OFFSET;
     int PAB = PA / iBLOCK_SIZE;
     int index = PAB % iCACHE_entries;
@@ -392,8 +387,8 @@ bool findICACHE(int PPN)
             if(iCACHE[index][i].tag==tag && iCACHE[index][i].valid == 1) {
                 // LRU policy
                 iCACHE[index][i].MRU = 1;
-                if(CACHE_MRU_all_ONE(index)) {
-                    clear_CACHE_MRU(index, i);
+                if(iCACHE_MRU_all_ONE(index)) {
+                    clear_iCACHE_MRU(index, i);
                     return true;
                 }
                 return true;
@@ -411,45 +406,20 @@ bool findDCACHE(int PPN)
     int tag = PAB / dCACHE_entries;
     int flag=0;
     int tmp;
-    if(dCACHE_associate==1)
-    {
-        if(tag==dCACHE[index][0].tag&&dCACHE[index][0].valid==1)
-        {
+
+    if(dCACHE_associate==1) {
+        if(dCACHE[index][0].tag==tag && dCACHE[index][0].valid==1) {
             return true;
         }
-
-    }
-    else
-    {
-        for(int i=0; i<dCACHE_associate; i++)
-        {
-            if(tag == dCACHE[index][i].tag && dCACHE[index][i].valid == 1)
-            {
-                for(int j=0; j<dCACHE_associate; j++)
-                {
-                    if(dCACHE[index][j].MRU==0)
-                    {
-
-                        if(flag==0)
-                        {
-                            tmp = j;
-                            flag=1;
-                        }
-                        else
-                        {
-                            flag=2;
-                            break;
-                        }
-                    }
+    } else {
+        for(int i=0; i<dCACHE_associate; i++) {
+            if(dCACHE[index][i].tag==tag && dCACHE[index][i].valid==1) {
+                // LRU policy
+                dCACHE[index][i].MRU = 1;
+                if(dCACHE_MRU_all_ONE(index)) {
+                    clear_dCACHE_MRU(index, i);
+                    return true;
                 }
-                if(flag==1 && tmp == i)
-                {
-                    for(int j=0; j<dCACHE_associate; j++)
-                    {
-                        dCACHE[index][j].MRU=0;
-                    }
-                }
-                dCACHE[index][i].MRU=1;
                 return true;
             }
         }
@@ -459,8 +429,7 @@ bool findDCACHE(int PPN)
 
 void updateICACHE(int PPN)
 {
-    if(PPN == -1) printf("PPN=-1\n");
-
+    //if(PPN == -1) printf("PPN=-1\n");
     int PA = PPN * iPAGE_SIZE + iPAGE_OFFSET;
     int PAB = PA / iBLOCK_SIZE;
     int index = PAB % iCACHE_entries;
@@ -494,21 +463,17 @@ void updateICACHE(int PPN)
             }
         }
         if(flags==1) {
-            if(flag==1 && tmp==one) {
-                for(int i=0; i<iCACHE_associate; i++) {
-                    iCACHE[index][i].MRU = 0;
-                }
-            }
             iCACHE[index][tmp].MRU = 1;
+            if(iCACHE_MRU_all_ONE(index) && tmp==one) {
+                clear_iCACHE_MRU(index,tmp);
+            }
             iCACHE[index][tmp].tag = tag;
             iCACHE[index][tmp].valid = 1;
         } else {
-            if(flag==1) {
-                for(int i=0; i<iCACHE_associate; i++) {
-                    iCACHE[index][i].MRU = 0;
-                }
-            }
             iCACHE[index][one].MRU = 1;
+            if(iCACHE_MRU_all_ONE(index)) {
+                clear_iCACHE_MRU(index,one);
+            }
             iCACHE[index][one].tag = tag;
             iCACHE[index][one].valid = 1;
         }
@@ -517,8 +482,7 @@ void updateICACHE(int PPN)
 
 void updateDCACHE(int PPN)
 {
-    if(PPN == -1) printf("PPN=-1\n");
-
+    //if(PPN == -1) printf("PPN=-1\n");
     int PA = PPN * dPAGE_SIZE + dPAGE_OFFSET;
     int PAB = PA / dBLOCK_SIZE;
     int index = PAB % dCACHE_entries;
@@ -552,21 +516,17 @@ void updateDCACHE(int PPN)
             }
         }
         if(flags==1) {
-            if(flag==1 && tmp==one) {
-                for(int i=0; i<dCACHE_associate; i++) {
-                    dCACHE[index][i].MRU = 0;
-                }
-            }
             dCACHE[index][tmp].MRU = 1;
+            if(dCACHE_MRU_all_ONE(index) && tmp==one) {
+                clear_dCACHE_MRU(index,tmp);
+            }
             dCACHE[index][tmp].tag = tag;
             dCACHE[index][tmp].valid = 1;
         } else {
-            if(flag==1) {
-                for(int i=0; i<dCACHE_associate; i++) {
-                    dCACHE[index][i].MRU = 0;
-                }
-            }
             dCACHE[index][one].MRU = 1;
+            if(dCACHE_MRU_all_ONE(index)) {
+                clear_dCACHE_MRU(index,one);
+            }
             dCACHE[index][one].tag = tag;
             dCACHE[index][one].valid = 1;
         }
